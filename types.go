@@ -1,5 +1,7 @@
 package spireauthlib
 
+import "github.com/sirupsen/logrus"
+
 type SpiffeIDConfig struct {
 	AuthorizedSpiffeIDs []string `yaml:"authorized_spiffe_ids"`
 }
@@ -13,3 +15,5 @@ type ClientAuth struct {
 	UdsPath    string `yaml:"uds_path" ignore_on_empty:"true"`
 	ServerSvid string `yaml:"server_svid" ignore_on_empty:"true"`
 }
+
+var Logger *logrus.Logger

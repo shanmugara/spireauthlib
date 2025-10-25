@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	"github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"
 	"github.com/spiffe/go-spiffe/v2/workloadapi"
@@ -16,6 +17,10 @@ import (
 // GetTlsClient creates a TLS-enabled HTTP client using SPIFFE mTLS.
 
 func (c *ClientAuth) GetTlsClient(ctx context.Context) (*http.Client, error) {
+	if Logger == nil {
+		Logger = logrus.New()
+	}
+
 	udsPath := os.Getenv("SPIFFE_ENDPOINT_SOCKET")
 	// Override with config value if set
 	if c.UdsPath != "" {

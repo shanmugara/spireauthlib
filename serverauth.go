@@ -18,12 +18,13 @@ const (
 	udsSocketPath = "/tmp/spire-agent/public/api.sock"
 )
 
-var Logger *logrus.Logger
-
 // SpiffeIDConfig reads from the YAML file containing authorized Spiffe IDs
 //and returns them as a slice of spiffeid.ID
 
 func (s *ServerAuth) LoadSpiffeIDs() ([]spiffeid.ID, error) {
+	if Logger == nil {
+		Logger = logrus.New()
+	}
 	var cfg SpiffeIDConfig
 	data, err := os.ReadFile(s.AllowedSpiffeIDsFile)
 	if err != nil {
