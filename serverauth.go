@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	"github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"
 	"github.com/spiffe/go-spiffe/v2/workloadapi"
@@ -22,9 +21,6 @@ const (
 //and returns them as a slice of spiffeid.ID
 
 func (s *ServerAuth) LoadSpiffeIDs() ([]spiffeid.ID, error) {
-	if Logger == nil {
-		Logger = logrus.New()
-	}
 	var cfg SpiffeIDConfig
 	data, err := os.ReadFile(s.AllowedSpiffeIDsFile)
 	if err != nil {
@@ -56,9 +52,6 @@ func (s *ServerAuth) getMySvid(ctx context.Context) (spiffeid.ID, error) {
 
 func (s ServerAuth) GetTlsConfig(ctx context.Context) (*tls.Config, error) {
 	// prefer package logger if set
-	if Logger == nil {
-		Logger = logrus.New()
-	}
 
 	wlSvid, err := s.getMySvid(ctx)
 	if err != nil {
@@ -67,17 +60,17 @@ func (s ServerAuth) GetTlsConfig(ctx context.Context) (*tls.Config, error) {
 
 	allowed, err := s.LoadSpiffeIDs()
 	if err != nil {
-		Logger.Errorf("unable to load allowed SPIFFE IDs: %v", err)
+		s.Logger.Errorf("unable to load allowed SPIFFE IDs: %v", err)
 		allowed = []spiffeid.ID{}
 	}
 
 	// Choose socket address: prefer SPIFFE_ENDPOINT_SOCKET env, otherwise fall back to default
 	udsPath := os.Getenv("SPIFFE_ENDPOINT_SOCKET")
 	if udsPath == "" {
-		Logger.Infof("SPIFFE_ENDPOINT_SOCKET not set")
+		s.Logger.Infof("SPIFFE_ENDPOINT_SOCKET not set")
 		udsPath = udsSocketPath
 	} else {
-		Logger.Infof("using SPIFFE_ENDPOINT_SOCKET: %s", udsPath)
+		s.Logger.Infof("using SPIFFE_ENDPOINT_SOCKET: %s", udsPath)
 	}
 
 	// If a plain filesystem path was provided, prefix with unix:// to form a valid URI
@@ -94,11 +87,11 @@ func (s ServerAuth) GetTlsConfig(ctx context.Context) (*tls.Config, error) {
 	var tlsConfig *tls.Config
 	if len(allowed) > 0 {
 		// Allow only the specified SPIFFE IDs
-		Logger.Infof("using %d allowed X509 SVID(s) for authorization", len(allowed))
+		s.Logger.Infof("using %d allowed X509 SVID(s) for authorization", len(allowed))
 		tlsConfig = tlsconfig.MTLSServerConfig(source, source, tlsconfig.AuthorizeOneOf(allowed...))
 	} else {
 		// Allow any workload from the default trust domain
-		Logger.Warn("no allowed X509 SVID, using default trust domain authorization: " + wlSvid.TrustDomain().String())
+		s.Logger.Warn("no allowed X509 SVID, using default trust domain authorization: " + wlSvid.TrustDomain().String())
 		tlsConfig = tlsconfig.MTLSServerConfig(source, source, tlsconfig.AuthorizeMemberOf(wlSvid.TrustDomain()))
 	}
 

@@ -8,7 +8,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	"github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"
 	"github.com/spiffe/go-spiffe/v2/workloadapi"
@@ -17,25 +16,22 @@ import (
 // GetTlsClient creates a TLS-enabled HTTP client using SPIFFE mTLS.
 
 func (c *ClientAuth) GetTlsClient(ctx context.Context) (*http.Client, error) {
-	if Logger == nil {
-		Logger = logrus.New()
-	}
 
 	udsPath := os.Getenv("SPIFFE_ENDPOINT_SOCKET")
 	// Override with config value if set
 	if c.UdsPath != "" {
-		Logger.Infof("Using UDS socket path override from config")
+		c.Logger.Infof("Using UDS socket path override from config")
 		udsPath = c.UdsPath
 	}
 
 	if udsPath != "" && !strings.HasPrefix(udsPath, "unix:") {
 		udsPath = "unix://" + udsPath
-		Logger.Infof("Using UDS socket path %s", udsPath)
+		c.Logger.Infof("Using UDS socket path %s", udsPath)
 	}
 
 	if udsPath == "" {
 		udsPath = "unix:///tmp/agent.sock"
-		Logger.Infof("Using default UDS socket endpoint: %s", udsPath)
+		c.Logger.Infof("Using default UDS socket endpoint: %s", udsPath)
 	}
 
 	mySvid, err := workloadapi.FetchX509SVID(ctx)
@@ -44,8 +40,8 @@ func (c *ClientAuth) GetTlsClient(ctx context.Context) (*http.Client, error) {
 	}
 	myTD := mySvid.ID.TrustDomain()
 
-	Logger.Infof("Workload trust domain: %s", myTD)
-	Logger.Infof("Workload SVID: %s", mySvid.ID.URL())
+	c.Logger.Infof("Workload trust domain: %s", myTD)
+	c.Logger.Infof("Workload SVID: %s", mySvid.ID.URL())
 
 	// Create a `workloadapi.X509Source`, it will connect to Workload API using provided socket path
 	// If socket path is not defined using `workloadapi.SourceOption`, value from environment variable `SPIFFE_ENDPOINT_SOCKET` is used.
@@ -63,7 +59,7 @@ func (c *ClientAuth) GetTlsClient(ctx context.Context) (*http.Client, error) {
 	}
 	var tlsConfig *tls.Config
 	if serverID != (spiffeid.ID{}) {
-		Logger.Infof("Authorizing connection to server SVID: %s", serverID.URL())
+		c.Logger.Infof("Authorizing connection to server SVID: %s", serverID.URL())
 		// Allow connection only to the specified server SPIFFE ID
 		tlsConfig = tlsconfig.MTLSClientConfig(source, source, tlsconfig.AuthorizeID(serverID))
 	} else {
