@@ -10,6 +10,7 @@ import (
 
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	"github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"
+	"github.com/spiffe/go-spiffe/v2/svid/jwtsvid"
 	"github.com/spiffe/go-spiffe/v2/workloadapi"
 )
 
@@ -74,4 +75,45 @@ func (c *ClientAuth) GetTlsClient(ctx context.Context) (*http.Client, error) {
 	}
 
 	return client, nil
+}
+
+func (c *ClientAuth) GetJWT(ctx context.Context) (*jwtsvid.SVID, error) {
+	udsPath := os.Getenv("SPIFFE_ENDPOINT_SOCKET")
+	// Override with config value if set
+	if c.UdsPath != "" {
+		c.Logger.Infof("Using UDS socket path override from config")
+		udsPath = c.UdsPath
+	}
+
+	if udsPath != "" && !strings.HasPrefix(udsPath, "unix:") {
+		udsPath = "unix://" + udsPath
+		c.Logger.Infof("Using UDS socket path %s", udsPath)
+	}
+
+	if udsPath == "" {
+		udsPath = "unix:///tmp/agent.sock"
+		c.Logger.Infof("Using default UDS socket endpoint: %s", udsPath)
+	}
+
+	mysvid, err := workloadapi.FetchX509SVID(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("unable to fetch X509 SVID: %w", err)
+	}
+	c.Logger.Infof("Workload SVID: %s", mysvid.ID.URL())
+	jwtParams := jwtsvid.Params{
+		Audience: "omegahome",
+		Subject:  mysvid.ID,
+	}
+	myjwt, err := workloadapi.FetchJWTSVID(ctx, jwtParams)
+	if err != nil {
+		return nil, fmt.Errorf("unable to fetch JWT SVID: %w", err)
+	}
+
+	jwtbundle, err := workloadapi.FetchJWTBundles(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("unable to fetch JWT bundles: %w", err)
+	}
+	c.Logger.Infof("JWT Bundle for trust domain %s has %d keys", myjwt.ID.TrustDomain(), jwtbundle.Len())
+	c.Logger.Infof("JWT SVID: %s", myjwt.ID.URL())
+	return myjwt, nil
 }
