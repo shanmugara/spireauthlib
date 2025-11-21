@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	udsSocketPath = "/tmp/spire-agent/public/api.sock"
+	udsSocketPath   = "/tmp/spire-agent/public/api.sock"
+	adminSocketPath = "/tmp/spire-agent/private/api.sock"
 )
 
 // SpiffeIDConfig reads from the YAML file containing authorized Spiffe IDs
