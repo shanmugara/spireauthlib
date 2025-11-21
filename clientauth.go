@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/spiffe/go-spiffe/v2/bundle/jwtbundle"
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	"github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"
 	"github.com/spiffe/go-spiffe/v2/svid/jwtsvid"
@@ -77,7 +78,7 @@ func (c *ClientAuth) GetTlsClient(ctx context.Context) (*http.Client, error) {
 	return client, nil
 }
 
-func (c *ClientAuth) GetJWT(ctx context.Context) (*jwtsvid.SVID, error) {
+func (c *ClientAuth) GetJWT(ctx context.Context) (*jwtbundle.Set, *jwtsvid.SVID, error) {
 	udsPath := os.Getenv("SPIFFE_ENDPOINT_SOCKET")
 	// Override with config value if set
 	if c.UdsPath != "" {
@@ -97,7 +98,7 @@ func (c *ClientAuth) GetJWT(ctx context.Context) (*jwtsvid.SVID, error) {
 
 	mysvid, err := workloadapi.FetchX509SVID(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("unable to fetch X509 SVID: %w", err)
+		return nil, nil, fmt.Errorf("unable to fetch X509 SVID: %w", err)
 	}
 	c.Logger.Infof("Workload SVID: %s", mysvid.ID.URL())
 	jwtParams := jwtsvid.Params{
@@ -106,14 +107,14 @@ func (c *ClientAuth) GetJWT(ctx context.Context) (*jwtsvid.SVID, error) {
 	}
 	myjwt, err := workloadapi.FetchJWTSVID(ctx, jwtParams)
 	if err != nil {
-		return nil, fmt.Errorf("unable to fetch JWT SVID: %w", err)
+		return nil, nil, fmt.Errorf("unable to fetch JWT SVID: %w", err)
 	}
 
 	jwtbundle, err := workloadapi.FetchJWTBundles(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("unable to fetch JWT bundles: %w", err)
+		return nil, nil, fmt.Errorf("unable to fetch JWT bundles: %w", err)
 	}
 	c.Logger.Infof("JWT Bundle for trust domain %s has %d keys", myjwt.ID.TrustDomain(), jwtbundle.Len())
 	c.Logger.Infof("JWT SVID: %s", myjwt.ID.URL())
-	return myjwt, nil
+	return jwtbundle, myjwt, nil
 }
