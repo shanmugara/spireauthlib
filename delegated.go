@@ -37,20 +37,23 @@ func (d *DelegatedAuth) GetTlsConfig(ctx context.Context, ns string, sa string) 
 		return nil, fmt.Errorf("unable to create X509Source: %w", err)
 	}
 	defer src.Close()
-	dlgAPIConn, err := grpc.NewClient(adminSocketPath, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	dlgClient := delegated.NewDelegatedIdentityClient(dlgAPIConn)
-	JWTSvidReq := delegated.FetchJWTSVIDsRequest{
+
+	dlgApiConn, err := grpc.NewClient(adminSocketPath, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	dlgClient := delegated.NewDelegatedIdentityClient(dlgApiConn)
+
+	JwtSvidReq := delegated.FetchJWTSVIDsRequest{
 		Selectors: []*types.Selector{
 			{Type: "k8s", Value: "ns:" + ns},
 			{Type: "k8s", Value: "sa:" + sa},
 		},
 		Audience: []string{"omegahome"},
 	}
-	jwtSvidResp, err := dlgClient.FetchJWTSVIDs(ctx, &JWTSvidReq)
+
+	JwtSvidResp, err := dlgClient.FetchJWTSVIDs(ctx, &JwtSvidReq)
 	if err != nil {
 		return nil, fmt.Errorf("unable to fetch JWT SVIDs via delegated identity: %w", err)
 	}
-	for _, s := range jwtSvidResp.Svids {
+	for _, s := range JwtSvidResp.Svids {
 		d.Logger.Infof("Delegated JWT SVID: %s", s.Id.Path)
 	}
 

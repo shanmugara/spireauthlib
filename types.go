@@ -5,6 +5,11 @@ import (
 	delegated "github.com/spiffe/spire-api-sdk/proto/spire/api/agent/delegatedidentity/v1"
 )
 
+const (
+	udsSocketPath   = "/run/secrets/workload-spiffe-uds/socket"
+	adminSocketPath = "/run/secrets/admin-spiffe-uds/socket"
+)
+
 type SpiffeIDConfig struct {
 	AuthorizedSpiffeIDs []string `yaml:"authorized_spiffe_ids"`
 }

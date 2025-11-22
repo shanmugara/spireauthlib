@@ -13,11 +13,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const (
-	udsSocketPath   = "/tmp/spire-agent/public/api.sock"
-	adminSocketPath = "/tmp/spire-agent/private/api.sock"
-)
-
 // SpiffeIDConfig reads from the YAML file containing authorized Spiffe IDs
 //and returns them as a slice of spiffeid.ID
 
