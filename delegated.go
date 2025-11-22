@@ -14,7 +14,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func (d *DelegatedAuth) GetTlsConfig(ctx context.Context, ns string, sa string) (*tls.Config, error) {
+func (d *DelegatedAuth) GetDelegatedJWT(ctx context.Context, ns string, sa string) (*tls.Config, error) {
 	udsPath := os.Getenv("SPIFFE_ENDPOINT_SOCKET")
 	// Override with config value if set
 	if d.UdsPath != "" {
@@ -54,7 +54,7 @@ func (d *DelegatedAuth) GetTlsConfig(ctx context.Context, ns string, sa string) 
 		return nil, fmt.Errorf("unable to fetch JWT SVIDs via delegated identity: %w", err)
 	}
 	for _, s := range JwtSvidResp.Svids {
-		d.Logger.Infof("Delegated JWT SVID: %s", s.Id.Path)
+		d.Logger.Infof("Delegated SVID: %s JWT: %s", s.Id.Path, s.Token)
 	}
 
 	return nil, nil
