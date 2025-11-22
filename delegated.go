@@ -38,7 +38,20 @@ func (d *DelegatedAuth) GetDelegatedJWT(ctx context.Context, ns string, sa strin
 	}
 	defer src.Close()
 
-	dlgApiConn, err := grpc.NewClient(adminSocketPath, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	adminPath := adminSocketPath
+	if d.AdminUdsPath != "" {
+		d.Logger.Infof("Using admin UDS socket path override from config")
+		adminPath = d.AdminUdsPath
+	}
+	if adminPath != "" && !strings.HasPrefix(adminPath, "unix:") {
+		adminPath = "unix://" + adminPath
+		d.Logger.Infof("Using admin UDS socket path %s", adminPath)
+	}
+
+	// Dial the admin socket using gRPC. Use DialContext so we honor the provided ctx.
+	//dlgApiConn, err := grpc.DialContext(ctx, adminPath, grpc.WithTransportCredentials(insecure.NewCredentials()))
+
+	dlgApiConn, err := grpc.NewClient(adminPath, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	dlgClient := delegated.NewDelegatedIdentityClient(dlgApiConn)
 	defer dlgApiConn.Close()
 
