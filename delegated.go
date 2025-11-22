@@ -40,6 +40,7 @@ func (d *DelegatedAuth) GetDelegatedJWT(ctx context.Context, ns string, sa strin
 
 	dlgApiConn, err := grpc.NewClient(adminSocketPath, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	dlgClient := delegated.NewDelegatedIdentityClient(dlgApiConn)
+	defer dlgApiConn.Close()
 
 	JwtSvidReq := delegated.FetchJWTSVIDsRequest{
 		Selectors: []*types.Selector{
@@ -48,6 +49,7 @@ func (d *DelegatedAuth) GetDelegatedJWT(ctx context.Context, ns string, sa strin
 		},
 		Audience: []string{"omegahome"},
 	}
+	d.Logger.Infof("Unmarshaled delegated JWT SVID request for selectors:%s audience:%s", JwtSvidReq.Selectors, JwtSvidReq.Audience)
 
 	JwtSvidResp, err := dlgClient.FetchJWTSVIDs(ctx, &JwtSvidReq)
 	if err != nil {
