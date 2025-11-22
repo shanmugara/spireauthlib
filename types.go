@@ -2,7 +2,6 @@ package spireauthlib
 
 import (
 	"github.com/sirupsen/logrus"
-	delegated "github.com/spiffe/spire-api-sdk/proto/spire/api/agent/delegatedidentity/v1"
 )
 
 const (
@@ -27,8 +26,7 @@ type ClientAuth struct {
 }
 
 type DelegatedAuth struct {
-	UdsPath         string `yaml:"uds_path" ignore_on_empty:"true"`
-	AdminUdsPath    string `yaml:"admin_uds_path" ignore_on_empty:"true"`
-	DelegatedClient delegated.DelegatedIdentityClient
-	Logger          *logrus.Logger
+	UdsPath      string `yaml:"uds_path" ignore_on_empty:"true"`
+	AdminUdsPath string `yaml:"admin_uds_path" ignore_on_empty:"true"`
+	Logger       *logrus.Logger
 }
