@@ -60,7 +60,6 @@ func (d *DelegatedAuth) GetDelegatedJWT(ctx context.Context, ns string, sa strin
 			{Type: "k8s", Value: "ns:" + ns},
 			{Type: "k8s", Value: "sa:" + sa},
 		},
-		Audience: []string{"omegahome"},
 	}
 	d.Logger.Infof("Unmarshaled delegated JWT SVID request for selectors:%s audience:%s", JwtSvidReq.Selectors, JwtSvidReq.Audience)
 
