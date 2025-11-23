@@ -7,6 +7,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/spiffe/go-spiffe/v2/spiffeid"
+	"github.com/spiffe/go-spiffe/v2/svid/jwtsvid"
 	"github.com/spiffe/go-spiffe/v2/workloadapi"
 	delegated "github.com/spiffe/spire-api-sdk/proto/spire/api/agent/delegatedidentity/v1"
 	"github.com/spiffe/spire-api-sdk/proto/spire/api/types"
@@ -48,6 +50,22 @@ func (d *DelegatedAuth) GetDelegatedJWT(ctx context.Context, ns string, sa strin
 		d.Logger.Infof("Using admin UDS socket path %s", adminPath)
 	}
 
+	mysvid, err := workloadapi.FetchX509SVID(ctx)
+
+	dlgSPiffeID := spiffeid.RequireFromString("spiffe://" + mysvid.ID.TrustDomain().String() + "/ns/" + ns + "/sa/" + sa)
+	d.Logger.Infof("Delegated SPIFFE ID: %s", dlgSPiffeID.String())
+
+	// fetch a JWT SVID first
+	jwtParams := jwtsvid.Params{
+		Audience: "omegahome",
+		Subject:  dlgSPiffeID,
+	}
+	jwtSvid, err := workloadapi.FetchJWTSVID(ctx, jwtParams)
+	if err != nil {
+		return nil, fmt.Errorf("unable to fetch JWT SVID for delegated id: %w", err)
+	}
+	d.Logger.Infof("Fetched JWT SVID for delegated id: %s", jwtSvid.ID.URL())
+
 	// Dial the admin socket using gRPC. Use DialContext so we honor the provided ctx.
 	//dlgApiConn, err := grpc.DialContext(ctx, adminPath, grpc.WithTransportCredentials(insecure.NewCredentials()))
 
@@ -65,6 +83,7 @@ func (d *DelegatedAuth) GetDelegatedJWT(ctx context.Context, ns string, sa strin
 	d.Logger.Infof("Unmarshaled delegated JWT SVID request for selectors:%s audience:%s", JwtSvidReq.Selectors, JwtSvidReq.Audience)
 
 	JwtSvidResp, err := dlgClient.FetchJWTSVIDs(ctx, &JwtSvidReq)
+
 	if err != nil {
 		return nil, fmt.Errorf("unable to fetch JWT SVIDs via delegated identity: %w", err)
 	}
