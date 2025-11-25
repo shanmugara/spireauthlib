@@ -68,6 +68,7 @@ func (d *DelegatedAuth) GetDelegatedJWT(ctx context.Context, ns string, sa strin
 		Selectors: []*types.Selector{
 			{Type: "k8s", Value: "ns:" + ns},
 			{Type: "k8s", Value: "sa:" + sa},
+			{Type: "k8s", Value: "pod-label:spiffe.io/cluster:omega-admin.omegaworld.net"},
 		},
 		Audience: []string{"omegahome"},
 	}
