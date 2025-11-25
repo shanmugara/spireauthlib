@@ -66,8 +66,8 @@ func (d *DelegatedAuth) GetDelegatedJWT(ctx context.Context, ns string, sa strin
 
 	JwtSvidReq := delegated.FetchJWTSVIDsRequest{
 		Selectors: []*types.Selector{
-			{Type: "k8s:ns", Value: ns},
-			{Type: "k8s:sa", Value: sa},
+			{Type: "k8s", Value: "ns:" + ns},
+			{Type: "k8s", Value: "sa:" + sa},
 		},
 		Audience: []string{"omegahome"},
 	}
