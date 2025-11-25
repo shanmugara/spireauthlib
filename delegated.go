@@ -54,31 +54,20 @@ func (d *DelegatedAuth) GetDelegatedJWT(ctx context.Context, ns string, sa strin
 		return nil, fmt.Errorf("unable to fetch X509 SVID: %w", err)
 	}
 
-	dlgSPiffeID := spiffeid.RequireFromString("spiffe://" + mysvid.ID.TrustDomain().String() + "/ns/" + ns + "/sa/" + sa)
-	d.Logger.Infof("Delegated SPIFFE ID: %s", dlgSPiffeID.String())
-
-	// fetch a JWT SVID first
-	//jwtParams := jwtsvid.Params{
-	//	Audience: "omegahome",
-	//	Subject:  dlgSPiffeID,
-	//}
-	//jwtSvid, err := workloadapi.FetchJWTSVID(ctx, jwtParams)
-	//if err != nil {
-	//	return nil, fmt.Errorf("unable to fetch JWT SVID for delegated id: %w", err)
-	//}
-	//d.Logger.Infof("Fetched JWT SVID for delegated id: %s", jwtSvid.ID.URL())
+	dlgSpiffeID := spiffeid.RequireFromString("spiffe://" + mysvid.ID.TrustDomain().String() + "/ns/" + ns + "/sa/" + sa)
+	d.Logger.Infof("Delegated SPIFFE ID: %s", dlgSpiffeID.String())
 
 	// Dial the admin socket using gRPC. Use DialContext so we honor the provided ctx.
 	//dlgApiConn, err := grpc.DialContext(ctx, adminPath, grpc.WithTransportCredentials(insecure.NewCredentials()))
 
-	dlgApiConn, err := grpc.DialContext(ctx, adminPath, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	dlgApiConn, err := grpc.NewClient(adminPath, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	dlgClient := delegated.NewDelegatedIdentityClient(dlgApiConn)
 	defer dlgApiConn.Close()
 
 	JwtSvidReq := delegated.FetchJWTSVIDsRequest{
 		Selectors: []*types.Selector{
-			{Type: "k8s", Value: "ns:" + ns},
-			{Type: "k8s", Value: "sa:" + sa},
+			{Type: "k8s:ns", Value: ns},
+			{Type: "k8s:sa", Value: sa},
 		},
 		Audience: []string{"omegahome"},
 	}
