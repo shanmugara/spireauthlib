@@ -50,6 +50,9 @@ func (d *DelegatedAuth) GetDelegatedJWT(ctx context.Context, ns string, sa strin
 	}
 
 	mysvid, err := workloadapi.FetchX509SVID(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("unable to fetch X509 SVID: %w", err)
+	}
 
 	dlgSPiffeID := spiffeid.RequireFromString("spiffe://" + mysvid.ID.TrustDomain().String() + "/ns/" + ns + "/sa/" + sa)
 	d.Logger.Infof("Delegated SPIFFE ID: %s", dlgSPiffeID.String())
@@ -68,7 +71,7 @@ func (d *DelegatedAuth) GetDelegatedJWT(ctx context.Context, ns string, sa strin
 	// Dial the admin socket using gRPC. Use DialContext so we honor the provided ctx.
 	//dlgApiConn, err := grpc.DialContext(ctx, adminPath, grpc.WithTransportCredentials(insecure.NewCredentials()))
 
-	dlgApiConn, err := grpc.NewClient(adminPath, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	dlgApiConn, err := grpc.DialContext(ctx, adminPath, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	dlgClient := delegated.NewDelegatedIdentityClient(dlgApiConn)
 	defer dlgApiConn.Close()
 
