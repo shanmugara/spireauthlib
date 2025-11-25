@@ -118,3 +118,13 @@ func (c *ClientAuth) GetJWT(ctx context.Context) (*jwtbundle.Set, *jwtsvid.SVID,
 	c.Logger.Infof("JWT SVID: %s", myjwt.ID.URL())
 	return jwtbundle, myjwt, nil
 }
+
+func (c *ClientAuth) ValidateJWT(jwtBundle *jwtbundle.Set, jwtSvid *jwtsvid.SVID) error {
+
+	svid, err := jwtsvid.ParseAndValidate(jwtSvid.Marshal(), jwtBundle, jwtSvid.Audience)
+	if err != nil {
+		return fmt.Errorf("unable to validate JWT SVID: %w", err)
+	}
+	c.Logger.Infof("Successfully validated JWT SVID: %s", svid.ID.URL())
+	return nil
+}
