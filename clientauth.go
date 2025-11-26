@@ -18,7 +18,6 @@ import (
 // GetTlsClient creates a TLS-enabled HTTP client using SPIFFE mTLS.
 
 func (c *ClientAuth) GetTlsClient(ctx context.Context) (*http.Client, error) {
-
 	udsPath := os.Getenv("SPIFFE_ENDPOINT_SOCKET")
 	// Override with config value if set
 	if c.UdsPath != "" {
@@ -78,7 +77,7 @@ func (c *ClientAuth) GetTlsClient(ctx context.Context) (*http.Client, error) {
 	return client, nil
 }
 
-func (c *ClientAuth) GetJWT(ctx context.Context) (*jwtbundle.Set, *jwtsvid.SVID, error) {
+func (c *ClientAuth) GetJWT(ctx context.Context, audience string) (*jwtbundle.Set, *jwtsvid.SVID, error) {
 	udsPath := os.Getenv("SPIFFE_ENDPOINT_SOCKET")
 	// Override with config value if set
 	if c.UdsPath != "" {
@@ -102,7 +101,7 @@ func (c *ClientAuth) GetJWT(ctx context.Context) (*jwtbundle.Set, *jwtsvid.SVID,
 	}
 	c.Logger.Infof("Workload SVID: %s", mysvid.ID.URL())
 	jwtParams := jwtsvid.Params{
-		Audience: "omegahome",
+		Audience: audience,
 		Subject:  mysvid.ID,
 	}
 	myjwt, err := workloadapi.FetchJWTSVID(ctx, jwtParams)
@@ -120,7 +119,6 @@ func (c *ClientAuth) GetJWT(ctx context.Context) (*jwtbundle.Set, *jwtsvid.SVID,
 }
 
 func (c *ClientAuth) ValidateJWT(jwtBundle *jwtbundle.Set, jwtSvid *jwtsvid.SVID) error {
-
 	svid, err := jwtsvid.ParseAndValidate(jwtSvid.Marshal(), jwtBundle, jwtSvid.Audience)
 	if err != nil {
 		return fmt.Errorf("unable to validate JWT SVID: %w", err)
