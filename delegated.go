@@ -11,6 +11,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+// GetDelegatedJWT selectors is a complete list of selectors attahced to the SVID. Incomplete lists will not match the SVID.
+// audience is the audience for the JWT SVID.
 func (d *DelegatedAuth) GetDelegatedJWT(ctx context.Context, selectors []*types.Selector, audience string) (*delegated.FetchJWTSVIDsResponse, error) {
 	adminPath := adminSocketPath
 	if d.AdminUdsPath != "" {
