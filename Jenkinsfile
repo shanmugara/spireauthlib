@@ -48,7 +48,7 @@ pipeline {
       steps {
         unstash 'next-tag'
         withCredentials([
-          usernamePassword(credentialsId: 'github-password', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')
+          usernamePassword(credentialsId: 'aa53f87f-dcf2-40cb-b44b-ed68bb9f0271', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')
         ]) {
           sh '''
           set -eux
