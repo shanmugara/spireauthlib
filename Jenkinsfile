@@ -22,37 +22,42 @@ pipeline {
       when { branch 'main' }
       steps {
         // Calculate next patch semver tag. If no tag exists, start from v0.0.1
-        sh '''
-        set -eux
-        git fetch --tags
-        latest=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-        echo "Latest tag: $latest"
-        ver=${latest#v}
-        # Parse the version components in a POSIX-compatible way (avoid bash-only '<<<')
-        major=$(echo "$ver" | cut -d. -f1)
-        minor=$(echo "$ver" | cut -d. -f2)
-        patch=$(echo "$ver" | cut -d. -f3)
-        major=${major:-0}
-        minor=${minor:-0}
-        patch=${patch:-0}
-        patch=$((patch + 1))
-        NEW_TAG="v${major}.${minor}.${patch}"
-        echo "NEW_TAG=$NEW_TAG" > next_tag.env
-        '''
-        stash includes: 'next_tag.env', name: 'next-tag'
+        // Use Groovy to fetch tags and compute the next version so we can reliably set
+        // an env var (avoids writing/sourcing a file and needing stash/unstash).
+        script {
+          // ensure tags are available
+          sh 'git fetch --tags'
+
+          def latest = sh(script: 'git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0"', returnStdout: true).trim()
+          echo "Latest tag: ${latest}"
+
+          def ver = latest.replaceFirst(/^v/, '')
+          def parts = ver.tokenize('.')
+          def major = (parts.size() > 0) ? parts[0].toInteger() : 0
+          def minor = (parts.size() > 1) ? parts[1].toInteger() : 0
+          def patch = (parts.size() > 2) ? parts[2].toInteger() : 0
+          patch = patch + 1
+
+          env.NEW_TAG = "v${major}.${minor}.${patch}"
+          echo "NEW_TAG=${env.NEW_TAG}"
+        }
       }
     }
 
     stage('Tag and push') {
       when { branch 'main' }
       steps {
-        unstash 'next-tag'
         withCredentials([
           usernamePassword(credentialsId: 'aa53f87f-dcf2-40cb-b44b-ed68bb9f0271', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')
         ]) {
           sh '''
           set -eux
-          . next_tag.env
+          # ensure NEW_TAG is present (set in previous stage via env.NEW_TAG)
+          echo "Using NEW_TAG=${NEW_TAG}"
+          if [ -z "${NEW_TAG}" ]; then
+            echo "ERROR: NEW_TAG is not set" >&2
+            exit 1
+          fi
 
           # ensure git user
           git config user.email "jenkins@local"
@@ -60,18 +65,12 @@ pipeline {
 
           # compute repo owner/name
           remote_url=$(git remote get-url origin)
-          echo "Remote URL: $remote_url"
-          if echo "$remote_url" | grep -q "@" ; then
-            # git@github.com:owner/repo.git -> take substring after ':'
-            repo_path=${remote_url#*:}
-          else
-            # https://github.com/owner/repo.git -> remove protocol+host prefix
-            repo_path=${remote_url#*://*/}
-          fi
-          # strip trailing .git if present
+          echo "Remote URL: ${remote_url}"
+          # normalize to owner/repo.git for both ssh and https forms
+          repo_path=$(echo "${remote_url}" | sed -E 's,git@[^:]+:,,' | sed -E 's,https?://[^/]+/,,')
           repo_path=${repo_path%.git}
-          OWNER=$(echo "$repo_path" | cut -d/ -f1)
-          REPO=$(echo "$repo_path" | cut -d/ -f2)
+          OWNER=$(echo "${repo_path}" | cut -d/ -f1)
+          REPO=$(echo "${repo_path}" | cut -d/ -f2)
 
           git tag -a "$NEW_TAG" -m "Automated release $NEW_TAG"
 
@@ -91,17 +90,17 @@ pipeline {
         ]) {
           sh '''
           set -eux
-          . next_tag.env
+          echo "Using NEW_TAG=${NEW_TAG}"
+          if [ -z "${NEW_TAG}" ]; then
+            echo "ERROR: NEW_TAG is not set" >&2
+            exit 1
+          fi
 
           remote_url=$(git remote get-url origin)
-          if echo "$remote_url" | grep -q "@" ; then
-            repo_path=${remote_url#*:}
-          else
-            repo_path=${remote_url#*://*/}
-          fi
+          repo_path=$(echo "${remote_url}" | sed -E 's,git@[^:]+:,,' | sed -E 's,https?://[^/]+/,,')
           repo_path=${repo_path%.git}
-          OWNER=$(echo "$repo_path" | cut -d/ -f1)
-          REPO=$(echo "$repo_path" | cut -d/ -f2)
+          OWNER=$(echo "${repo_path}" | cut -d/ -f1)
+          REPO=$(echo "${repo_path}" | cut -d/ -f2)
 
           api_url="https://api.github.com/repos/${OWNER}/${REPO}/releases"
 
