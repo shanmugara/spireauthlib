@@ -86,7 +86,7 @@ pipeline {
       when { branch 'main' }
       steps {
         withCredentials([
-          string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')
+          string(credentialsId: 'aaf467cd-851b-4db5-aa58-5feb4e7bc942', variable: 'GITHUB_TOKEN')
         ]) {
           sh '''
           set -eux
