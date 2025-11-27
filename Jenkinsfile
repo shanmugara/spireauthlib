@@ -28,7 +28,10 @@ pipeline {
         latest=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
         echo "Latest tag: $latest"
         ver=${latest#v}
-        IFS=. read -r major minor patch <<< "$ver"
+        # Parse the version components in a POSIX-compatible way (avoid bash-only '<<<')
+        major=$(echo "$ver" | cut -d. -f1)
+        minor=$(echo "$ver" | cut -d. -f2)
+        patch=$(echo "$ver" | cut -d. -f3)
         major=${major:-0}
         minor=${minor:-0}
         patch=${patch:-0}
