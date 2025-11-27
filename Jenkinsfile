@@ -3,7 +3,7 @@ pipeline {
   agent any
 
   // Only run pipeline steps on the main branch (works with Multibranch Pipeline or GitHub webhook triggers)
-  triggers {}
+  // No top-level triggers: Multibranch Pipeline / webhooks control when this runs.
 
   options {
     skipDefaultCheckout(true)
