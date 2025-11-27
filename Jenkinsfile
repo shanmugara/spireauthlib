@@ -59,12 +59,14 @@ pipeline {
           remote_url=$(git remote get-url origin)
           echo "Remote URL: $remote_url"
           if echo "$remote_url" | grep -q "@" ; then
-            # git@github.com:owner/repo.git
-            repo_path=$(echo "$remote_url" | sed -E 's/.*[:\/]([^:\/]+\/[^.]+)(\.git)?/\1/')
+            # git@github.com:owner/repo.git -> take substring after ':'
+            repo_path=${remote_url#*:}
           else
-            # https://github.com/owner/repo.git
-            repo_path=$(echo "$remote_url" | sed -E 's#https?://[^/]+/([^/]+/[^/]+)(\.git)?#\1#')
+            # https://github.com/owner/repo.git -> remove protocol+host prefix
+            repo_path=${remote_url#*://*/}
           fi
+          # strip trailing .git if present
+          repo_path=${repo_path%.git}
           OWNER=$(echo "$repo_path" | cut -d/ -f1)
           REPO=$(echo "$repo_path" | cut -d/ -f2)
 
@@ -90,10 +92,11 @@ pipeline {
 
           remote_url=$(git remote get-url origin)
           if echo "$remote_url" | grep -q "@" ; then
-            repo_path=$(echo "$remote_url" | sed -E 's/.*[:\/]([^:\/]+\/[^.]+)(\.git)?/\1/')
+            repo_path=${remote_url#*:}
           else
-            repo_path=$(echo "$remote_url" | sed -E 's#https?://[^/]+/([^/]+/[^/]+)(\.git)?#\1#')
+            repo_path=${remote_url#*://*/}
           fi
+          repo_path=${repo_path%.git}
           OWNER=$(echo "$repo_path" | cut -d/ -f1)
           REPO=$(echo "$repo_path" | cut -d/ -f2)
 
@@ -120,4 +123,3 @@ EOF
     }
   }
 }
-
