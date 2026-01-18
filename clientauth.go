@@ -52,7 +52,7 @@ func (c *ClientAuth) GetTlsClient(ctx context.Context) (*http.Client, error) {
 	}
 	// If ServerSvid is set, parse it
 	var serverID spiffeid.ID
-	if c.ServerSvid != "" {
+	if c.ServerSvid != "" && c.ServerSvid != "any" {
 		serverID, err = spiffeid.FromString(c.ServerSvid)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse server SVID SPIFFE ID: %w", err)
@@ -63,8 +63,13 @@ func (c *ClientAuth) GetTlsClient(ctx context.Context) (*http.Client, error) {
 		c.Logger.Infof("Authorizing connection to server SVID: %s", serverID.URL())
 		// Allow connection only to the specified server SPIFFE ID
 		tlsConfig = tlsconfig.MTLSClientConfig(source, source, tlsconfig.AuthorizeID(serverID))
+	} else if c.ServerSvid == "any" {
+		// Allow connection to any server
+		c.Logger.Infof("Authorizing connection to any server")
+		tlsConfig = tlsconfig.MTLSClientConfig(source, source, tlsconfig.AuthorizeAny())
 	} else {
-		// Allow connection to all my trust domain member servers
+		// Allow connection to all my trust domain member servers by default
+		c.Logger.Infof("Authorizing connection to any server in trust domain: %s", myTD)
 		tlsConfig = tlsconfig.MTLSClientConfig(source, source, tlsconfig.AuthorizeMemberOf(myTD))
 	}
 
